@@ -1,0 +1,12 @@
+spring:
+  profiles: default
+  application:
+    name: workflow-core
+server:
+  port: 8100
+mybatis:
+  mapperLocations: classpath*:/mapper/*.xml
+  configuration:
+    mapUnderscoreToCamelCase: true
+
+

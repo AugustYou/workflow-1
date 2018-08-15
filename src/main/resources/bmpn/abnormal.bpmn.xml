@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.activiti.org/processdef">
+    <signal id = "alertSignal" name="alert"></signal>
+    <process id="test" name="test" isExecutable="true">
+        <endEvent id="startEvent" name="开始事件"></endEvent>
+        <userTask id="leaderAudit" name="领导审批">
+            <potentialOwner>
+                <resourceAssignmentExpression>
+                    <formalExpression>
+                        user(henryyan), group(leader), manager
+                    </formalExpression>
+                </resourceAssignmentExpression>
+            </potentialOwner>
+        </userTask>
+        <userTask id="leaderAudit1" name="领导审批">
+            <extensionElements>
+                <activiti:taskListener class="" event="complete"></activiti:taskListener>
+            </extensionElements>
+        </userTask>
+        <scriptTask id="initvars" name="初始化变量" scriptFormat="groovy">
+            <script><![CDATA[
+                def name = "HenryYan";
+                execution.setVariable("name", name);
+                ]]>
+            </script>
+        </scriptTask>
+        <serviceTask id="webServiceTask" implementation="##WebService">
+            <ioSpecification>
+                <dataInput itemSubjectRef="tns:prettyPrintCountRequestItem" id="dataInputofServiceTask"></dataInput>
+                <dataOutput itemSubjectRef="tns:prettyPrintCountResponseItem" id="dataOutputOfServiceTask"/>
+                <inputSet>
+                    <dataInputRefs>dataInputofServiceTask</dataInputRefs>
+                </inputSet>
+                <outputSet>
+                    <dataOutputRefs>dataOutputOfServiceTask</dataOutputRefs>
+                </outputSet>
+            </ioSpecification>
+            <dataInputAssociation>
+                <sourceRef>PrefixVariable</sourceRef>
+                <targetRef>prefix</targetRef>
+            </dataInputAssociation>
+            <dataInputAssociation>
+                <sourceRef>suffixVariable</sourceRef>
+                <targetRef>suffix</targetRef>
+            </dataInputAssociation>
+            <dataOutputAssociation>
+                <sourceRef>prettyPrint</sourceRef>
+                <targetRef>OutputVariable</targetRef>
+            </dataOutputAssociation>
+        </serviceTask>
+
+
+        <businessRuleTask id="businessRuleTask" activiti:ruleVariablesInput="${order}"
+                          activiti:rules="rule1, rule2" exclude="true"/>
+
+        <subProcess id="eventsubprocess1" name="Event sub Procss" triggeredByEvent="true">
+            <startEvent id="errorstartevent1" name="Error start">
+                <errorEventDefinition errorRef="AIA001">
+                </errorEventDefinition>
+            </startEvent>
+            <scriptTask id="scripttask1" name="Script Task" scriptFormat="groovy">
+                <script>![CDATA[out:println "catch an error";]]</script>
+            </scriptTask>
+            <sequenceFlow id="flow3" name="" sourceRef="errorstartevent1" targetRef="scripttask1"></sequenceFlow>
+            <endEvent id="endevent3" name="End"></endEvent>
+            <sequenceFlow id="flow4" name="" sourceRef="scripttask1" targetRef="endevent3"></sequenceFlow>
+        </subProcess>
+
+
+        <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway" default="flow2">
+        </exclusiveGateway>
+        <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="exclusivegateway1"></sequenceFlow>
+        <userTask id="usertask1" name="任务1"></userTask>
+        <sequenceFlow id="flow2" name="${type == 1}" sourceRef="exclusivegateway1" targetRef="usertask1">
+            <conditionExpression xsi:type="tFormalExpression">
+                <![CDATA[${type == 1}}]]>
+            </conditionExpression>
+        </sequenceFlow>
+        <userTask id="usertask2" name="任务二"></userTask>
+        <sequenceFlow id="flow5" name="${type == 2}" sourceRef="exclusivegateway1" targetRef="usertask2">
+            <conditionExpression xsi:type="tFormalExpression">
+                <![CDATA[${type == 2}}]]>
+            </conditionExpression>
+        </sequenceFlow>
+        <userTask id="usertask3" name="任务三"></userTask>
+        <sequenceFlow id="flow6" name="${type == 3}" sourceRef="exclusivegateway1" targetRef="usertask3">
+            <conditionExpression xsi:type="tFormalExpression">
+                <![CDATA[${type == 3}]]>
+            </conditionExpression>
+        </sequenceFlow>
+
+
+        <parallelGateway id="fork" name="Parallel Gateway Fork"></parallelGateway>
+        <userTask id="usertask11" name="部门领导审批"></userTask>
+        <userTask id="usertask22" name="人事审批"></userTask>
+        <parallelGateway id="join" name="Patallel Gateway Join"></parallelGateway>
+        <userTask id="usertask33" name="考勤归档"></userTask>
+        <endEvent id="endevent1" name="End"></endEvent>
+        <userTask id="usertask44" name="请假申请"></userTask>
+        <sequenceFlow id="flow22" sourceRef="usertask44" targetRef="fork"></sequenceFlow>
+        <sequenceFlow id="flow33" sourceRef="fork" targetRef="usertask11"></sequenceFlow>
+        <sequenceFlow id="flow44" sourceRef="fork" targetRef="usertask22"></sequenceFlow>
+        <sequenceFlow id="flow55" sourceRef="usertask11" targetRef="join"></sequenceFlow>
+        <sequenceFlow id="flow66" sourceRef="usertask22" targetRef="join"></sequenceFlow>
+        <sequenceFlow id="flow77" sourceRef="join" targetRef="usertask33"></sequenceFlow>
+        <sequenceFlow id="flow88" sourceRef="usertask33" targetRef="endevent3"></sequenceFlow>
+        <sequenceFlow id="flow99" sourceRef="errorstartevent1" targetRef="usertask44"></sequenceFlow>
+
+
+
+        <startEvent id="startevent1" name="Start"></startEvent>
+        <eventBasedGateway id="eventgateway1" name="Event Gateway"></eventBasedGateway>
+        <intermediateCatchEvent id="timerintermediatecatchevent1" name="TimerCatchEvent">
+            <timerEventDefinition>
+                <timeDuration>PT1S</timeDuration>
+            </timerEventDefinition>
+        </intermediateCatchEvent>
+
+        <scriptTask id="scripttask11" name="定时器任务执行之后" scriptFormat="groovy">
+            <script><![CDATA[out:println "after time event";]]></script>
+        </scriptTask>
+
+        <intermediateCatchEvent id="signalintermediatecatchevent1" name="SignalCatchEvent">
+            <signalEventDefinition signalRef="alertSignal"></signalEventDefinition>
+        </intermediateCatchEvent>
+
+        <scriptTask id="scripttask2" name="信号捕获事件之后" scriptFormat="groovy">
+            <script>
+                <![CDATA[out:println "after signal event";]]>
+            </script>
+        </scriptTask>
+
+        <endEvent id="endevent2" name="End"></endEvent>
+        <sequenceFlow id="flow11" sourceRef="startEvent" targetRef="eventgateway1"></sequenceFlow>
+        <sequenceFlow id="flow222" sourceRef="eventgateway1" targetRef="timerintermediatecatchevent1"></sequenceFlow>
+        <sequenceFlow id="flow333" sourceRef="timerintermediatecatchevent1" targetRef="scripttask1"></sequenceFlow>
+        <sequenceFlow id="flow444" sourceRef="scripttask1" targetRef="endevent2"></sequenceFlow>
+        <sequenceFlow id="flow555" sourceRef="eventgateway1" targetRef="signalintermediatecatchevent1"></sequenceFlow>
+        <sequenceFlow id="flow666" sourceRef="signalintermediatecatchevent1" targetRef="scripttask2"></sequenceFlow>
+        <sequenceFlow sourceRef="scripttask2" targetRef="endevent2" id="flow777"></sequenceFlow>
+
+    </process>
+</definitions>
